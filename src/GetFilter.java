@@ -8,8 +8,9 @@ class GetFilter {
 		// Zuerst eigenen Hostname holen
 		// ---------------------------------------------------------
 		String host = InetAddress.getLocalHost().getHostName();
+		String ip = InetAddress.getLocalHost().getHostAddress();
 		int port = 9876;
-		System.out.println("Server startet auf " + host + " an " + port);
+		System.out.println("Server startet auf " + host + " / " + ip + " an " + port);
 
 		// ServerSocket einrichten und in einer Schleife auf
 		// Requests warten.
@@ -51,10 +52,11 @@ class GetFilter {
 			pw.println("HTTP/1.1 200 OK"); // Der Header
 			pw.println("Content-Type: text/html");
 			pw.println();
+			pw.println("<html>");
 			pw.println("<body>");
 			pw.println("<h2 align=center>Telefonverzeichnis</h2>");
 			pw.println("<h3>Sie können nach Name oder nach Telefonnummer oder nach beiden (nebenläufig) suchen.</h3>");
-			pw.println("<form method=get action='http://MattiSwitch:9876'>");
+			pw.println("<form method=get action='http://" + ip + ":" + port + "'>");
 			pw.println("<table>");
 			pw.println("<tr> <td valign=top>Name:</td>    <td><input name=A></td>    <td></td> </tr>");
 			pw.println("<tr> <td valign=top>Nummer:</td> <td><input name=B></td>    <td></td> </tr>");
@@ -64,6 +66,7 @@ class GetFilter {
 			pw.println("</table>");
 			pw.println("</form>");
 			pw.println("</body>");
+			pw.println("<html>");
 			pw.println();
 			pw.flush();
 			pw.close();
