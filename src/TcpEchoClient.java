@@ -8,7 +8,7 @@ public class TcpEchoClient {
 		System.out.println("S: Start");
 		
 		System.out.println("S: Socket einrichten und verbinden");
-		Socket s = new Socket("laptopname", 9021);
+		Socket s = new Socket("SwitchMatti", 9021);
 				
 		BufferedReader sbr = new BufferedReader(
 				new InputStreamReader(s.getInputStream()));
