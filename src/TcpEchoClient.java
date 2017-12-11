@@ -33,7 +33,6 @@ public class TcpEchoClient {
 				break;
 			}
 		}
-		
 		spw.close();
 		sbr.close();
 		br.close();

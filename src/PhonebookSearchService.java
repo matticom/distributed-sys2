@@ -74,7 +74,6 @@ public class PhonebookSearchService implements SearchService {
 		int endIdxName = params.indexOf("&");
 		int startIdxPhoneNumber = params.indexOf("=", startIdxName) + 1;
 		int endIdxPhoneNumber = params.length();
-		
 		try {
 			name = URLDecoder.decode(params.substring(startIdxName, endIdxName).trim(), "UTF-8");
 			phoneNumber = Integer.parseInt(params.substring(startIdxPhoneNumber, endIdxPhoneNumber).trim());
