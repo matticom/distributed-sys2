@@ -7,7 +7,9 @@
 import java.io.*; // Fuer den Reader
 import java.net.*; // Fuer den Socket
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
+
 
 class PBServer {
 
@@ -65,22 +67,29 @@ class PBServer {
 				generateFormHtmlCode(pw, content, ip, port);
 			}
 			if (content.startsWith("?")) {
-				System.out.println(content);
+//				System.out.println(content);
 				int delimiterPos = content.lastIndexOf("&");
 				String params = content.substring(0, delimiterPos);
 				String control = content.substring(delimiterPos + 1);
+				delimiterPos = params.lastIndexOf("&");
+				String name = URLDecoder.decode(params.substring(3, delimiterPos), "UTF-8");
+				String phoneNumber = params.substring(delimiterPos + 3);
+				ControlsValidator validator = new ControlsValidator();
+				validator.checkFields(name, phoneNumber);
+//				System.out.println(name + " " + phoneNumber);
 				if (control.startsWith("C")) {
 					Repository repo = new Repository();
 					PhonebookSearchService service = new PhonebookSearchService(repo);
 					List<PN_Entry> resultList = service.searchWithParams(params);
-					System.out.println("Params: " + params);
+//					System.out.println("Params: " + params);
 					if (params.length() < 7) {
 						generateFormHtmlCode(pw, content, ip, port);
 					} else {
+						String errorText = setNothingFoundText(service.getFeedBack(), validator);
 						if (!resultList.isEmpty()) {
-							generateResultHtmlCode(pw, resultList, ip, port);
+							generateResultHtmlCode(pw, resultList, ip, port, errorText);
 						} else {
-							generateNoFoundsHtmlCode(pw, ip, port);
+							generateNoFoundsHtmlCode(pw, ip, port, errorText);
 						}
 					}
 				}
@@ -95,6 +104,34 @@ class PBServer {
 		} // end while
 	} // end main()
 
+	protected static String setNothingFoundText(Map<String, Boolean> emptinessFeedback, ControlsValidator validator) {
+		final String NAME_MAP_KEY = "NAME";
+		final String PHONENUMBER_MAP_KEY = "PHONE";
+		boolean nameIsEmpty = emptinessFeedback.get(NAME_MAP_KEY);
+		boolean phoneNumberIsEmpty = emptinessFeedback.get(PHONENUMBER_MAP_KEY);
+		boolean nameIsOK = validator.getNameStatus().equals(FieldsStatus.NameOK);
+		boolean phoneNumberIsOK = validator.getPhoneNumberStatus().equals(FieldsStatus.PhoneOK);
+		String searchTerms = new String();
+		// wenn eingegebener Name gültig war und nicht gefunden wurde (Fall 1)
+		if (nameIsOK && nameIsEmpty) {
+			searchTerms += validator.getName();
+		}
+		// wenn eingegebener Name sowie Telefonnummer gültig waren und nicht gefunden wurden (Fall 2)
+		if (nameIsOK && phoneNumberIsOK && nameIsEmpty && phoneNumberIsEmpty) {
+			searchTerms += " / ";
+		}
+		// wenn eingegebener Telefonnummer gültig war und nicht gefunden wurde (Fall 3)
+		if (phoneNumberIsOK && phoneNumberIsEmpty) {
+			searchTerms += validator.getPhoneNumber();
+		}
+		// entweder Fall 1 oder Fall2 oder Fall3 zutrafen, dann wird Feedback angezeigt
+		if (nameIsOK && nameIsEmpty || phoneNumberIsOK && phoneNumberIsEmpty) {
+			return "Die Suche nach " + searchTerms + " war erfolglos";
+		} else {
+			return "";
+		}
+	}
+	
 	private static void generateServerShutdownHtmlCode(PrintWriter pw) {
 		pw.println("HTTP/1.1 200 OK"); // Der Header
 		pw.println("Content-Type: text/html");
@@ -111,7 +148,7 @@ class PBServer {
 		pw.println();
 	}
 	
-	private static void generateNoFoundsHtmlCode(PrintWriter pw, String ip, int port) {
+	private static void generateNoFoundsHtmlCode(PrintWriter pw, String ip, int port, String errorText) {
 		pw.println("HTTP/1.1 200 OK"); // Der Header
 		pw.println("Content-Type: text/html");
 		pw.println();
@@ -121,7 +158,7 @@ class PBServer {
 		pw.println("<title>Telefonsuchservice</title>");
 		pw.println("</head>");
 		pw.println("<body>");
-		pw.println("<h1>Es wurde leider nichts gefunden</h1>");
+		pw.println("<h1>" + errorText + "</h1>");
 		pw.println("<br>");
 		pw.println("<a href='http://" + ip + ":" + port + "'><button>Zurück</button></a>");
 		pw.println("</body>");
@@ -130,7 +167,7 @@ class PBServer {
 		pw.flush();
 	}
 	
-	private static void generateResultHtmlCode(PrintWriter pw, List<PN_Entry> resultList, String ip, int port) {
+	private static void generateResultHtmlCode(PrintWriter pw, List<PN_Entry> resultList, String ip, int port, String errorText) {
 		pw.println("HTTP/1.1 200 OK"); // Der Header
 		pw.println("Content-Type: text/html");
 		pw.println();
@@ -148,6 +185,10 @@ class PBServer {
 					"<tr> <td>" + resultList.get(i).name + "</td><td>" + resultList.get(i).phoneNumber + "</td> </tr>");
 		}
 		pw.println("</table>");
+		if (!errorText.isEmpty()) {
+			pw.println("<br>");
+			pw.println("<p>(" + errorText + ")</p>");
+		}
 		pw.println("<br>");
 		pw.println("<a href='http://" + ip + ":" + port + "'><button>Zurück</button></a>");
 		pw.println("</body>");
