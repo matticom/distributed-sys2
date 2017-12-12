@@ -8,6 +8,7 @@ import java.io.*; // Fuer den Reader
 import java.net.*; // Fuer den Socket
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.regex.Pattern;
 
 
@@ -20,7 +21,11 @@ class PBServer {
 		// ---------------------------------------------------------
 		String host = InetAddress.getLocalHost().getHostName();
 		String ip = InetAddress.getLocalHost().getHostAddress();
-		int port = 9876;
+		Scanner reader = new Scanner(System.in);  // Reading from System.in
+		System.out.println("Port des Server bitte eingeben: ");
+		int port = reader.nextInt(); // Scans the next token of the input as an int.
+		//once finished
+		reader.close(); 
 		System.out.println("Server startet auf " + host + " / " + ip + " an " + port);
 
 		// ServerSocket einrichten und in einer Schleife auf
@@ -64,7 +69,7 @@ class PBServer {
 			String content = segs[1].substring(0, segs[1].length() - 5);
 
 			if (!content.startsWith("?")) {
-				generateFormHtmlCode(pw, content, ip, port);
+				generateFormHtmlCode(pw, content, host, port);
 			}
 			if (content.startsWith("?")) {
 //				System.out.println(content);
@@ -83,13 +88,13 @@ class PBServer {
 					List<PN_Entry> resultList = service.searchWithParams(params);
 //					System.out.println("Params: " + params);
 					if (params.length() < 7) {
-						generateFormHtmlCode(pw, content, ip, port);
+						generateFormHtmlCode(pw, content, host, port);
 					} else {
 						String errorText = setNothingFoundText(service.getFeedBack(), validator);
 						if (!resultList.isEmpty()) {
-							generateResultHtmlCode(pw, resultList, ip, port, errorText);
+							generateResultHtmlCode(pw, resultList, host, port, errorText);
 						} else {
-							generateNoFoundsHtmlCode(pw, ip, port, errorText);
+							generateNoFoundsHtmlCode(pw, host, port, errorText);
 						}
 					}
 				}
@@ -100,7 +105,10 @@ class PBServer {
 					break;
 				}
 			}
-
+			
+			pw.close();
+			br.close();
+			cs.close();
 		} // end while
 	} // end main()
 
@@ -148,7 +156,7 @@ class PBServer {
 		pw.println();
 	}
 	
-	private static void generateNoFoundsHtmlCode(PrintWriter pw, String ip, int port, String errorText) {
+	private static void generateNoFoundsHtmlCode(PrintWriter pw, String host, int port, String errorText) {
 		pw.println("HTTP/1.1 200 OK"); // Der Header
 		pw.println("Content-Type: text/html");
 		pw.println();
@@ -160,14 +168,15 @@ class PBServer {
 		pw.println("<body>");
 		pw.println("<h1>" + errorText + "</h1>");
 		pw.println("<br>");
-		pw.println("<a href='http://" + ip + ":" + port + "'><button>Zurück</button></a>");
+		pw.println("<form method=get action='http://" + host + ":" + port + "' accept-charset='UTF-8'>");
+		pw.println("<input type=submit value='Zurück'>");
 		pw.println("</body>");
 		pw.println("<html>");
 		pw.println();
 		pw.flush();
 	}
 	
-	private static void generateResultHtmlCode(PrintWriter pw, List<PN_Entry> resultList, String ip, int port, String errorText) {
+	private static void generateResultHtmlCode(PrintWriter pw, List<PN_Entry> resultList, String host, int port, String errorText) {
 		pw.println("HTTP/1.1 200 OK"); // Der Header
 		pw.println("Content-Type: text/html");
 		pw.println();
@@ -190,14 +199,16 @@ class PBServer {
 			pw.println("<p>(" + errorText + ")</p>");
 		}
 		pw.println("<br>");
-		pw.println("<a href='http://" + ip + ":" + port + "'><button>Zurück</button></a>");
+		pw.println("<form method=get action='http://" + host + ":" + port + "' accept-charset='UTF-8'>");
+		pw.println("<input type=submit value='Zurück'>");
+		pw.println("</form>");
 		pw.println("</body>");
 		pw.println("<html>");
 		pw.println();
 		pw.flush();
 	}
 
-	private static void generateFormHtmlCode(PrintWriter pw, String content, String ip, int port) {
+	private static void generateFormHtmlCode(PrintWriter pw, String content, String host, int port) {
 		pw.println("HTTP/1.1 200 OK"); // Der Header
 		pw.println("Content-Type: text/html");
 		pw.println();
@@ -209,7 +220,7 @@ class PBServer {
 		pw.println("<body>");
 		pw.println("<h2 align=center>Telefonverzeichnis</h2>");
 		pw.println("<h3>Sie können nach Name oder nach Telefonnummer oder nach beiden (nebenläufig) suchen.</h3>");
-		pw.println("<form method=get action='http://" + ip + ":" + port + "' accept-charset='UTF-8'>");
+		pw.println("<form method=get action='http://" + host + ":" + port + "' accept-charset='UTF-8'>");
 		pw.println("<table>");
 		pw.println(
 				"<tr> <td valign=top>Name:</td>    <td><input name=A pattern='\\S([A-Za-züäößÜÄÖ]|\\s)*'></td>    <td></td> </tr>");
